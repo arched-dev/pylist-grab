@@ -32,30 +32,29 @@ WIZARD_TITLE = "How to Get a Valid YouTube Playlist URL"
 WIZARD_PAGES = [
     {
         "text": "First, head over to YouTube and use the search bar to look for a genre or artist. Avoid searching for specific songs at this stage.",
-        "image_path": "./assets/page_1.png",
+        "image_path": "./pylist/assets/page_1.png",
     },
     {
         "text": "Once the search results are displayed, locate the 'Filter' button at the upper-right corner of the page. \n\nClick it and select 'Playlist' from the dropdown options.",
-        "image_path": "./assets/page_2.png",
+        "image_path": "./pylist/assets/page_2.png",
     },
     {
         "text": "Browse through the filtered results to find a playlist that catches your interest.\n\nEnsure that the thumbnail indicates multiple videos, or look for a listing that includes a 'VIEW FULL PLAYLIST' button. \n\nOpen the playlist you've chosen.",
-        "image_path": "./assets/page_3.png",
+        "image_path": "./pylist/assets/page_3.png",
     },
     {
         "text": "After the playlist page has loaded, you'll see a long list of videos on the right hand side of the page.\n\n You should see the playlist name at the top of this list, click on the 'playlist title' to view the playlist.",
-        "image_path": "./assets/page_4.png",
+        "image_path": "./pylist/assets/page_4.png",
     },
     {
         "text": "You should now be on the playlist's dedicated page. \n\n Verify this by checking if the URL starts with 'youtube.com/playlist?...'. \n\n This is the URL you need.",
-        "image_path": "./assets/page_5.png",
+        "image_path": "./pylist/assets/page_5.png",
     },
 ]
 
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
-
     # Check if it's an absolute path
     if os.path.isabs(relative_path):
         return relative_path
@@ -64,7 +63,10 @@ def resource_path(relative_path):
     relative_path = relative_path.lstrip('./')
 
     base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_path, relative_path)
+    print(base_path, 'getting img')
+    final_path = os.path.join(base_path, relative_path)
+    print(final_path, 'final path getting img')
+    return final_path
 
 class HowToPage(QWizardPage):
     def __init__(self, text, image_path):
@@ -386,10 +388,24 @@ class App(QMainWindow):
 
 def gui():
     app = PySide6.QtWidgets.QApplication(sys.argv)
-    apply_stylesheet(app, theme="C:\\Users\\vboxuser\\PycharmProjects\\pylist\\venv\\Lib\\site-packages\\qt_material\\themes\\dark_teal.xml")  # Apply the dark teal theme
+
+    if hasattr(sys, '_MEIPASS'):
+        theme_path = resource_path('pylist/assets/dark_teal.xml')
+        icon_path = resource_path('pylist/assets/icon_256.ico')
+    else:
+        theme_path = 'dark_teal.xml'
+        icon_path = 'assets/icon_256.ico'
+
+    apply_stylesheet(app, theme=theme_path)  # Apply the dark teal theme
+
+    app_icon = QIcon(icon_path)  # Create a QIcon object
+    app.setWindowIcon(app_icon)  # Set the app icon BEFORE creating the window
+
     ex = App()
-    ex.setWindowIcon(QIcon("./assets/icon_256.ico"))
+    ex.setWindowIcon(app_icon)  # Usually redundant, but can't hurt.
+
     sys.exit(app.exec())
+
 
 
 if __name__ == "__main__":

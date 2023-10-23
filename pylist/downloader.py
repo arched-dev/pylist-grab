@@ -13,6 +13,8 @@ from mutagen.id3 import ID3, TIT2, TPE1, COMM, APIC, TDRC
 from mutagen.mp3 import MP3
 import requests
 
+from utils import run_silently
+
 REMOVE_WORDS = [
     "Official Video",
     "Official Video",
@@ -57,19 +59,20 @@ REMOVE_WORDS = [
     "Performance Video",
 ]
 
+
 # Function to set metadata for MP3 files
 
 
 def set_metadata(
-    save_path: str,
-    filename: str,
-    author: str,
-    title: str,
-    artwork: str,
-    keywords: str,
-    comment: str,
-    date: str,
-    genre: Optional[str] = None,
+        save_path: str,
+        filename: str,
+        author: str,
+        title: str,
+        artwork: str,
+        keywords: str,
+        comment: str,
+        date: str,
+        genre: Optional[str] = None,
 ):
     """
     Set the metadata for the MP3 file
@@ -126,7 +129,7 @@ def set_metadata(
     audio.save()
 
 
-def clean_title(title: str):
+def clean_title(title: str, featured: str):
     for word in REMOVE_WORDS:
         title = (
             title.replace(word, "")
@@ -135,12 +138,15 @@ def clean_title(title: str):
             .replace(word.title(), "")
         )
 
+    title = title.replace(featured, "").replace("(ft. )", '').replace("ft. ", '').replace("ft ", '')
+
     return (
         title.replace("  ", " ")
         .replace("()", "")
         .replace("[]", "")
         .replace("( )", "")
         .replace("[ ]", "")
+        .replace("  ", " ")
         .strip()
     )
 
@@ -211,6 +217,7 @@ def extract_featured_artist(song_info):
 
     return None
 
+
 def pull_meta_data(yt: str):
     """
     Pull metadata from the YouTube video
@@ -220,7 +227,10 @@ def pull_meta_data(yt: str):
     Returns:
         dict: The metadata
     """
-    featured = extract_featured_artist(yt.title) if extract_featured_artist(yt.title) else extract_featured_artist(yt.author)
+    featured = extract_featured_artist(yt.title) if extract_featured_artist(yt.title) else extract_featured_artist(
+        yt.author)
+    if featured is None:
+        featured = ''
 
     if "-" in yt.title:
         author, title = yt.title.split("-")
@@ -230,11 +240,11 @@ def pull_meta_data(yt: str):
         author = yt.author
         title = yt.title
 
-    title = clean_title(title)
-    author = clean_title(author)
-    if featured:
-        author = f"{author} ft. {featured}"
+    title = clean_title(title, featured)
+    author = clean_title(author, featured)
 
+    if featured:
+        author = f"{author}, {featured}"
 
     # Determine filename, author, and title
     if "-" not in title:
@@ -278,13 +288,14 @@ def read_write_audio(meta_data: dict, dump_directory: str):
 
 
 def download_playlist(
-    playlist: Playlist,
-    dump_directory="./",
-    genre: Optional[str] = None,
-    do_yield=True,
-    is_cli=False,
-    verbosity=1,
-    download_indicator_function: Optional[callable] = None,
+        playlist: Playlist,
+        dump_directory="./",
+        genre: Optional[str] = None,
+        do_yield=True,
+        is_cli=False,
+        verbosity=1,
+        download_indicator_function: Optional[callable] = None,
+        silence: Optional[bool]= False,
 ):
     """
     Download a playlist from YouTube, song by song, adding the metadata thats extracted from the video
@@ -297,9 +308,10 @@ def download_playlist(
         is_cli (bool): Whether the function is being called from the CLI
         verbosity (int): The verbosity level  0 to 2. 0 is no output, 1 is minimal output, 2 is full output
         download_indicator_function (callable): A function to call to indicate that a download has started
+        silence (bool): Whether to silence the output
     """
 
-    def log(message, indicator:Optional[callable]=None, no_indicator:Optional[int]=0):
+    def log(message, indicator: Optional[callable] = None, no_indicator: Optional[int] = 0):
         """
         Log a message
         Args:
@@ -318,24 +330,26 @@ def download_playlist(
     # Loop through all videos in the playlist
     for url in playlist.video_urls:
         try:
+
             start_time = time.time()
 
             log("Attempting to grab: " + url, download_indicator_function, 1)
-            yt = download_stream_from_url(url)
+            yt = run_silently(download_stream_from_url, silence, url)
             if yt:
                 meta_data = pull_meta_data(yt)
                 log("Metadata received: " + str(meta_data))
 
                 log("Attempting to download")
-                filename = read_write_audio(meta_data, dump_directory)
+                filename = run_silently(read_write_audio, silence, meta_data, dump_directory)
+
                 log("Download complete", download_indicator_function, 2)
 
-                set_metadata(save_path=filename, genre=genre, **meta_data)
+                run_silently(set_metadata, silence, save_path=filename, genre=genre, **meta_data)
                 log("MP3 Metadata saved")
 
                 end_time = time.time()
                 time_taken = (
-                    end_time - start_time
+                        end_time - start_time
                 )  # Time taken for this download in seconds
 
                 if do_yield:
@@ -345,6 +359,8 @@ def download_playlist(
             else:
                 if verbosity > 0:
                     log("Could not download: " + url)
+
+
         except Exception as e:
             if verbosity > 0:
                 log(f"Could not download: {url} because of {e}")

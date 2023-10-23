@@ -48,11 +48,14 @@ By choosing `pylist`, you're not just opting for convenience; you're choosing a 
 
 ### Installing via PyPI
 
-To install `pylist`, open your terminal and run the following command:
+To install `pylist` in linux, open your terminal and run the following command:
 
 ```bash
 pip install pylist
 ```
+### Running in Windows
+
+Download the fully compiled `pylist.exe` and run. 
 
 ## Usage
 

@@ -4,7 +4,7 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
-from pylist.downloader import validate_playlist, download_playlist
+from downloader import validate_playlist, download_playlist
 
 
 class CustomArgParser(argparse.ArgumentParser):
@@ -18,9 +18,7 @@ class CustomArgParser(argparse.ArgumentParser):
         sys.exit(2)
 
 
-def print_progress_bar(
-    completed, total, author, title, avg_time_per_item, bar_length=50
-):
+def print_progress_bar(completed, total, author, title, avg_time_per_item, bar_length=50):
     progress = float(completed) / float(total)
     arrow = "=" * int(round(progress * bar_length) - 1)
     spaces = " " * (bar_length - len(arrow))
@@ -30,10 +28,9 @@ def print_progress_bar(
     estimated_time_str = str(timedelta(seconds=round(estimated_time_left)))
 
     sys.stdout.write(
-        f"\r[{arrow}{spaces}] {int(progress * 100)}% Complete (~{estimated_time_str} left) - Latest Download: {author} - {title}"
+        f"\r[{arrow}{spaces}] {int(progress * 100)}% Complete ({completed}/{total} ~{estimated_time_str} left) - Latest Download: {author} - {title}                  "
     )
     sys.stdout.flush()
-
 
 def main():
     parser = CustomArgParser(
@@ -77,8 +74,7 @@ def main():
 
     total_time_taken = 0
 
-    for i, (meta_data, time_taken) in enumerate(
-        download_playlist(playlist, dump_directory, genre)
+    for i, (meta_data, time_taken) in enumerate(download_playlist(playlist, dump_directory, genre, silence=True)
     ):
         total_time_taken += time_taken
         avg_time_per_item = total_time_taken / (i + 1)
