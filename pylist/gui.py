@@ -4,7 +4,7 @@ import threading
 import time
 
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QPixmap, QAction
+from PyQt6.QtGui import QPixmap, QAction, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
     QWidget,
@@ -149,34 +149,6 @@ class HowToWindow(HowToBase):
         super().__init__(pages, title)
 
 
-class HowToUseWindow(HowToBase):
-    def __init__(self):
-        title = "How to Use"
-        pages = [
-            {
-                "text": "With your playlist URL ready, paste it into the first box and click 'Validate', if valid the next boxes will illuminate. If not you will be shown an error.",
-                "image_path": "./assets/page_1.png",
-            },
-            {
-                "text": "Once the search results are displayed, locate the 'Filter' button at the upper-right corner of the page. \n\nClick it and select 'Playlist' from the dropdown options.",
-                "image_path": "./assets/page_2.png",
-            },
-            {
-                "text": "Browse through the filtered results to find a playlist that catches your interest. Ensure that the thumbnail indicates multiple videos, or look for a listing that includes a 'VIEW FULL PLAYLIST' button. \n\nOpen the playlist you've chosen.",
-                "image_path": "./assets/page_3.png",
-            },
-            {
-                "text": "After the playlist page has loaded, you'll see the playlist title at the top, right above a list of videos. Click on the playlist title to proceed.",
-                "image_path": "./assets/page_4.png",
-            },
-            {
-                "text": "You should now be on the playlist's dedicated page. Verify this by checking if the URL starts with 'youtube.com/playlist?...'. \n\nIf it does, go ahead and copy the URL, then paste it into this application.",
-                "image_path": "./assets/page_5.png",
-            },
-        ]
-        super().__init__(pages)
-
-
 class App(QMainWindow):
     download_progress = pyqtSignal(int, str, str, str, str)
 
@@ -295,10 +267,6 @@ class App(QMainWindow):
             "While streaming services have largely rendered MP3s obsolete for the average listener, they remain essential for DJs and other professionals who need direct access to audio files.\n\nWell-formatted metadata makes it easier to manage your song catalog effectively.\n\nPlease note that this project serves as a proof of concept to demonstrate the technical feasibility of such a service. We do not endorse or encourage the unauthorized distribution of copyrighted material. Always remember to support your favorite artists by purchasing their music legally."
         )
         msg.exec()
-
-    def how_to_use(self):
-        self.how_to_use_window = HowToUseWindow()
-        self.how_to_use_window.show()
 
     def open_about_dialog(self):
         msg = QMessageBox()
@@ -425,7 +393,5 @@ def gui():
     app = QApplication(sys.argv)
     apply_stylesheet(app, theme="dark_teal.xml")  # Apply the dark teal theme
     ex = App()
+    ex.setWindowIcon(QIcon("./assets/icon_256.ico"))
     sys.exit(app.exec())
-
-
-gui()

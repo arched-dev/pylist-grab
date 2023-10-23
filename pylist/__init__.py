@@ -1,2 +1,2 @@
-from .downloader import download_playlist
-from .gui import gui
+from pylist.downloader import download_playlist
+from pylist.gui import gui
