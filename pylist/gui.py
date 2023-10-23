@@ -2,10 +2,12 @@ import os
 import sys
 import threading
 import time
+import webbrowser
 
-from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
-from PyQt6.QtGui import QPixmap, QAction, QIcon
-from PyQt6.QtWidgets import (
+import PySide6
+from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtGui import QPixmap, QAction, QIcon, QFont
+from PySide6.QtWidgets import (
     QApplication,
     QWidget,
     QVBoxLayout,
@@ -17,11 +19,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QMessageBox,
     QHBoxLayout,
-    QDialog,
-    QStackedWidget,
-    QGraphicsScene,
-    QGraphicsView,
-    QMainWindow,
+    QMainWindow, QSizePolicy, QWizardPage, QWizard,
 )
 from qt_material import apply_stylesheet
 
@@ -30,127 +28,83 @@ from pylist.downloader import (
     validate_playlist,
 )  # Replace these imports with your actual functions
 
+WIZARD_TITLE = "How to Get a Valid YouTube Playlist URL"
+WIZARD_PAGES = [
+    {
+        "text": "First, head over to YouTube and use the search bar to look for a genre or artist. Avoid searching for specific songs at this stage.",
+        "image_path": "./assets/page_1.png",
+    },
+    {
+        "text": "Once the search results are displayed, locate the 'Filter' button at the upper-right corner of the page. \n\nClick it and select 'Playlist' from the dropdown options.",
+        "image_path": "./assets/page_2.png",
+    },
+    {
+        "text": "Browse through the filtered results to find a playlist that catches your interest.\n\nEnsure that the thumbnail indicates multiple videos, or look for a listing that includes a 'VIEW FULL PLAYLIST' button. \n\nOpen the playlist you've chosen.",
+        "image_path": "./assets/page_3.png",
+    },
+    {
+        "text": "After the playlist page has loaded, you'll see a long list of videos on the right hand side of the page.\n\n You should see the playlist name at the top of this list, click on the 'playlist title' to view the playlist.",
+        "image_path": "./assets/page_4.png",
+    },
+    {
+        "text": "You should now be on the playlist's dedicated page. \n\n Verify this by checking if the URL starts with 'youtube.com/playlist?...'. \n\n This is the URL you need.",
+        "image_path": "./assets/page_5.png",
+    },
+]
 
-class ClickableLabel(QLabel):
-    clicked = pyqtSignal()
 
-    def mousePressEvent(self, event):
-        self.clicked.emit()
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
 
+    # Check if it's an absolute path
+    if os.path.isabs(relative_path):
+        return relative_path
 
-class ImageDialog(QDialog):
-    def __init__(self, image_path):
+    # Remove the './' from the relative path if present
+    relative_path = relative_path.lstrip('./')
+
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base_path, relative_path)
+
+class HowToPage(QWizardPage):
+    def __init__(self, text, image_path):
         super().__init__()
-        self.setWindowTitle("Example Image")
         layout = QVBoxLayout()
-        graphics_view = QGraphicsView()
-        scene = QGraphicsScene()
-        pixmap = QPixmap(image_path)
-        scene.addPixmap(pixmap)
-        graphics_view.setScene(scene)
-        layout.addWidget(graphics_view)
+
+        # Create a QLabel for the text
+        text_label = QLabel()
+        text_label.setText(text)
+
+        # Set the font size and add a border
+        text_label.setFont(QFont("Arial", 14))  # Adjust the font size as needed
+        text_label.setStyleSheet("QLabel { border: 2px solid black; padding: 10px; }")
+
+        layout.addWidget(text_label)
+
+        # Create a QLabel for the image
+        image = QPixmap(resource_path(image_path))
+        image_label = QLabel()
+        image_label.setPixmap(image)
+        image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Center align the image
+        image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        layout.addWidget(image_label)
         self.setLayout(layout)
 
 
-class HowToBase(QDialog):
-    def __init__(self, pages: list, title: str):
+class HowToWizard(QWizard):
+    def __init__(self, pages, title):
         super().__init__()
         self.setWindowTitle(title)
-        self.setModal(True)
 
-        self.stacked_widget = QStackedWidget()
-
-        for page in pages:
-            self.stacked_widget.addWidget(
-                self.create_page(page["text"], page["image_path"])
-            )
-
-        self.current_page_index = 0
-
-        # Create Next and Back buttons
-        button_layout = QHBoxLayout()
-        self.next_button = QPushButton("Next")
-        self.next_button.clicked.connect(self.go_next)
-        self.back_button = QPushButton("Back")
-        self.back_button.clicked.connect(self.go_back)
-        self.back_button.setEnabled(False)
-        button_layout.addWidget(self.back_button)
-        button_layout.addWidget(self.next_button)
-
-        # Main layout
-        main_layout = QVBoxLayout()
-        main_layout.addWidget(self.stacked_widget)
-        main_layout.addLayout(button_layout)
-
-        self.setLayout(main_layout)
-        self.show()
-
-    def create_page(self, text, image_path):
-        page = QWidget()
-        layout = QVBoxLayout()
-
-        text_label = QLabel()
-        text_label.setText(text)
-        layout.addWidget(text_label)
-
-        thumbnail = QPixmap(image_path).scaled(
-            200, 200, Qt.AspectRatioMode.KeepAspectRatioByExpanding
-        )
-        thumbnail_label = QLabel()
-        thumbnail_label.setPixmap(thumbnail)
-
-        layout.addWidget(thumbnail_label)
-        page.setLayout(layout)
-
-        return page
-
-    def go_next(self):
-        if self.current_page_index < self.stacked_widget.count() - 1:
-            self.stacked_widget.setCurrentIndex(self.current_page_index + 1)
-            self.back_button.setEnabled(True)
-            self.current_page_index += 1
-        if self.current_page_index == self.stacked_widget.count() - 1:
-            self.next_button.setEnabled(False)
-
-    def go_back(self):
-        if self.current_page_index > 0:
-            self.stacked_widget.setCurrentIndex(self.current_page_index - 1)
-            self.next_button.setEnabled(True)
-            self.current_page_index -= 1
-        if self.current_page_index == 0:
-            self.back_button.setEnabled(False)
-
-
-class HowToWindow(HowToBase):
-    def __init__(self):
-        title = "How to Get a Valid YouTube Playlist URL"
-        pages = [
-            {
-                "text": "First, head over to YouTube and use the search bar to look for a genre or artist. Avoid searching for specific songs at this stage.",
-                "image_path": "./assets/page_1.png",
-            },
-            {
-                "text": "Once the search results are displayed, locate the 'Filter' button at the upper-right corner of the page. \n\nClick it and select 'Playlist' from the dropdown options.",
-                "image_path": "./assets/page_2.png",
-            },
-            {
-                "text": "Browse through the filtered results to find a playlist that catches your interest. Ensure that the thumbnail indicates multiple videos, or look for a listing that includes a 'VIEW FULL PLAYLIST' button. \n\nOpen the playlist you've chosen.",
-                "image_path": "./assets/page_3.png",
-            },
-            {
-                "text": "After the playlist page has loaded, you'll see the playlist title at the top, right above a list of videos. Click on the playlist title to proceed.",
-                "image_path": "./assets/page_4.png",
-            },
-            {
-                "text": "You should now be on the playlist's dedicated page. Verify this by checking if the URL starts with 'youtube.com/playlist?...'. \n\nIf it does, go ahead and copy the URL, then paste it into this application.",
-                "image_path": "./assets/page_5.png",
-            },
-        ]
-        super().__init__(pages, title)
-
+        for page_info in pages:
+            text = page_info["text"]
+            image_path = page_info["image_path"]
+            self.addPage(HowToPage(text, image_path))
 
 class App(QMainWindow):
-    download_progress = pyqtSignal(int, str, str, str, str)
+    download_progress = Signal(int, str, str, str, str, bool)
+    temp_labels: list = []
 
     def __init__(self):
         super(App, self).__init__()
@@ -183,7 +137,8 @@ class App(QMainWindow):
         self.folder_button.clicked.connect(self.select_folder)
         layout.addWidget(self.folder_button)
 
-        self.genre_input = QLineEdit("Enter Genre")
+        self.genre_input = QLineEdit()
+        self.genre_input.setPlaceholderText("Enter Genre")
         self.genre_input.setEnabled(False)
         layout.addWidget(self.genre_input)
 
@@ -216,12 +171,22 @@ class App(QMainWindow):
         self.download_progress.connect(self.update_progress)
         self.show()
 
+    def show_how_to(self):
+
+        self.wizard = HowToWizard(WIZARD_PAGES, WIZARD_TITLE)
+        self.wizard.show()
+
     def restore_placeholder(self):
         if not self.url_input.hasFocus() and not self.url_input.text():
             self.url_input.setPlaceholderText("Enter Playlist URL")
 
     def focusInEvent(self, event):
         self.url_input.setPlaceholderText("")
+
+    def open_github(self):
+        # Replace 'https://github.com/your_username/your_repository' with your actual GitHub repository URL
+        github_url = 'https://github.com/lewis-morris/pylist'
+        webbrowser.open(github_url)
 
     def create_menu(self):
         menu_bar = self.menuBar()
@@ -240,24 +205,24 @@ class App(QMainWindow):
         what_it_does_action.triggered.connect(self.open_what_it_does)
 
         find_url_action = QAction("Finding playlist URL", self)
-        find_url_action.triggered.connect(self.open_how_to_window)
+        find_url_action.triggered.connect(self.show_how_to)
 
         # Create actions for About menu
         about_action = QAction("About", self)
         about_action.triggered.connect(self.open_about_dialog)
+
+        website_action = QAction("Website", self)
+        website_action.triggered.connect(self.open_github)
 
         # Add actions to menus
         file_menu.addAction(close_action)
         view_menu.addAction(what_it_does_action)
         view_menu.addAction(find_url_action)
         about_menu.addAction(about_action)
+        about_menu.addAction(website_action)
 
     def close_app(self):
         self.close()
-
-    def open_how_to_window(self):
-        self.how_to_window = HowToWindow()
-        self.how_to_window.show()
 
     def open_what_it_does(self):
         msg = QMessageBox()
@@ -272,7 +237,7 @@ class App(QMainWindow):
         msg = QMessageBox()
         msg.setWindowTitle("About")
         msg.setText(
-            "GUI and cli interface & metadata injection written by Lewis Morris (lewis.morris@gmail.com)\n\n Libraries Used and Loved: \n pytube \n moviepy \n mutagen \n PyQt6 \n qt_material"
+            "GUI and cli interface & metadata injection written by Lewis Morris (lewis.morris@gmail.com)\n\n Libraries Used and Loved: \n\n pytube \n moviepy \n mutagen \n pyside6 \n qt_material"
         )
         msg.exec()
 
@@ -285,6 +250,7 @@ class App(QMainWindow):
                 self.download_button.setEnabled(True)
                 self.genre_input.setEnabled(True)
                 self.playlist_length = len(self.playlist.video_urls)
+
         except Exception:
             error_dialog = QMessageBox(self)
             error_dialog.setWindowTitle("Invalid URL")
@@ -301,34 +267,29 @@ class App(QMainWindow):
             error_dialog.exec()
 
             if error_dialog.clickedButton() == how_to_button:
-                self.show_how_to_window()
-
-    def show_how_to_window(self):
-        self.how_to_window = HowToWindow()
+                self.show_how_to()
 
     def select_folder(self):
         self.output_folder = QFileDialog.getExistingDirectory(
             self, "Select Output Folder"
         )
 
-    def disable_all(self):
-        self.download_button.setEnabled(False)
-        self.genre_input.setEnabled(False)
-        self.folder_button.setEnabled(False)
-        self.validate_url_button.setEnabled(False)
-        self.url_input.setEnabled(False)
+    def change_all(self, status=False):
+        self.download_button.setEnabled(status)
+        self.genre_input.setEnabled(status)
+        self.folder_button.setEnabled(status)
+        self.validate_url_button.setEnabled(status)
+        self.url_input.setEnabled(status)
 
     def confirm_and_start_downloading(self):
         if not hasattr(self, "output_folder"):
-            desktop = os.path.join(os.path.join(os.path.expanduser("~")), "Desktop")
-            self.output_folder = os.path.join(desktop, "YouTube MP3s")
-            if not os.path.exists(self.output_folder):
-                os.makedirs(self.output_folder)
+            desktop = os.path.join(os.path.join(os.path.expanduser("~")), "Music")
+            output_folder = os.path.join(desktop, "Youtube-rips")
 
             confirm_dialog = QMessageBox(self)
             confirm_dialog.setWindowTitle("Confirm Folder")
             confirm_dialog.setText(
-                f"You have not selected an output directory. Are you happy to save files to {self.output_folder}?"
+                f"You have not selected an output directory. Are you happy to save files to {output_folder}?"
             )
             confirm_dialog.setIcon(QMessageBox.Icon.Question)
             confirm_dialog.setStandardButtons(
@@ -338,33 +299,63 @@ class App(QMainWindow):
 
             if result == QMessageBox.StandardButton.No:
                 return
+            else:
+                if not os.path.exists(output_folder):
+                    os.makedirs(output_folder)
+                self.output_folder = output_folder
 
-        threading.Thread(target=self.start_downloading).start()
+        thread = threading.Thread(target=self.start_downloading)
+        thread.daemon = True  # Set the thread to daemon mode
+        thread.start()
 
-    @pyqtSlot(int, str, str, str, str)
-    def update_progress(self, i, artist, title, duration, estimated_remaining):
+    @Slot(int, str, str, str, str, bool)
+    def update_progress(self, i, artist, title, duration, estimated_remaining, download_started=False):
+        print(f"update_progress called with {i}, {artist}, {title}")
+
         percent = int((i / self.playlist_length) * 100)
         self.progress_bar.setValue(percent)
 
-        song_label = QLabel(f"Downloaded: {artist} - {title} (Took: {duration} mm:ss)")
         sub_layout = QVBoxLayout()
-        sub_layout.addWidget(song_label)
 
-        self.scroll_layout.insertLayout(0, sub_layout)
-        self.progress_label.setText(
-            f"{i}/{self.playlist_length} (Estimated time remaining: {estimated_remaining} mm:ss)"
-        )
+        if download_started:
+            song_label = QLabel(f"Attempting download of track {i + 1}")
+            sub_layout.addWidget(song_label)
+            self.scroll_layout.insertLayout(0, sub_layout)
+            self.temp_labels.append(song_label)  # Add to temporary labels
+        else:
+            # Remove the previous temporary label if it exists
+            if self.temp_labels:
+                temp_label = self.temp_labels.pop(0)
+                temp_label.deleteLater()
+
+            # Create new label with updated information
+            song_label = QLabel(f"{artist} - {title} (Download took: {duration})")
+            sub_layout.addWidget(song_label)
+            self.scroll_layout.insertLayout(0, sub_layout)
+
+        print(f"Inserted new QLabel with text: {song_label.text()}")
+
+        if estimated_remaining:
+            self.progress_label.setText(f"{i}/{self.playlist_length} (Estimated time remaining: {estimated_remaining})")
+
 
     total_time = 0  # Total time taken for all songs in seconds
 
+    def set_downloading(self, dots=0):
+        self.download_button.setText("Downloading" + "." * dots)
+
     def start_downloading(self):
-        self.download_button.setText("Downloading...")
-        self.disable_all()
+        self.change_all()
+        self.set_downloading(0)
 
         self.total_time = 0  # Initialize total_time
 
+        # set the initial progress message
+        self.download_progress.emit(0, None, None, None, None, True)
+
+
         for i, (song_meta, time_taken) in enumerate(
-            download_playlist(self.playlist, self.output_folder)
+                download_playlist(self.playlist, self.output_folder, genre=self.genre_input.text(), download_indicator_function=self.set_downloading)
         ):
             title = song_meta["title"]
             artist = song_meta["author"]
@@ -373,7 +364,7 @@ class App(QMainWindow):
 
             average_time = self.total_time / (i + 1)  # Average time per song
             estimated_remaining = average_time * (
-                self.playlist_length - (i + 1)
+                    self.playlist_length - (i + 1)
             )  # Estimate remaining time
 
             duration = time.strftime("%M:%S", time.gmtime(time_taken))
@@ -382,16 +373,20 @@ class App(QMainWindow):
             )
 
             self.download_progress.emit(
-                i + 1, artist, title, duration, estimated_remaining_str
+                i + 1, artist, title, duration, estimated_remaining_str, False
             )
+
+            self.download_progress.emit(i+1, None, None, None, None, True)
+
             time.sleep(0.1)
 
         self.download_button.setText("Start Downloading")
+        self.change_all(True)
 
 
 def gui():
-    app = QApplication(sys.argv)
-    apply_stylesheet(app, theme="dark_teal.xml")  # Apply the dark teal theme
+    app = PySide6.QtWidgets.QApplication(sys.argv)
+    apply_stylesheet(app, theme="C:\\Users\\vboxuser\\PycharmProjects\\pylist\\venv\\Lib\\site-packages\\qt_material\\themes\\dark_teal.xml")  # Apply the dark teal theme
     ex = App()
     ex.setWindowIcon(QIcon("./assets/icon_256.ico"))
     sys.exit(app.exec())

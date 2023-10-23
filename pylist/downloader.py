@@ -1,3 +1,4 @@
+import re
 import time
 from typing import Optional
 
@@ -24,12 +25,6 @@ REMOVE_WORDS = [
     "Official Audio",
     "Visualizer",
     "Visualizer",
-    "Live",
-    "Live",
-    "Acoustic",
-    "Acoustic",
-    "Remix",
-    "Remix",
     "Audio",
     "Audio",
     "Cover",
@@ -200,6 +195,22 @@ def download_stream_from_url(song_url: str):
     return yt
 
 
+def extract_featured_artist(song_info):
+    # Regular expression to capture artist name after 'ft.'
+    # This pattern accounts for optional parentheses, and considers different placements of 'ft.'
+    regex_patterns = [
+        r'ft\.\s*(?:\()?(.*?)(?:\))?\s*-',  # Before the dash
+        r'-\s*(?:.*?)ft\.\s*(?:\()?(.*?)(?:\))?$'  # After the dash
+    ]
+
+    for pattern in regex_patterns:
+        # Perform regex search
+        match = re.search(pattern, song_info)
+        if match:
+            return match.group(1).strip()
+
+    return None
+
 def pull_meta_data(yt: str):
     """
     Pull metadata from the YouTube video
@@ -209,10 +220,21 @@ def pull_meta_data(yt: str):
     Returns:
         dict: The metadata
     """
-    author = yt.author if yt.author else yt.title.split("-")[-1].strip()
-    title = yt.title if "-" not in yt.title else yt.title.split("-")[0].strip()
+    featured = extract_featured_artist(yt.title) if extract_featured_artist(yt.title) else extract_featured_artist(yt.author)
+
+    if "-" in yt.title:
+        author, title = yt.title.split("-")
+        title = title.strip().replace("  ", " ")
+        author = author.strip().replace("  ", " ")
+    else:
+        author = yt.author
+        title = yt.title
+
     title = clean_title(title)
     author = clean_title(author)
+    if featured:
+        author = f"{author} ft. {featured}"
+
 
     # Determine filename, author, and title
     if "-" not in title:
@@ -262,6 +284,7 @@ def download_playlist(
     do_yield=True,
     is_cli=False,
     verbosity=1,
+    download_indicator_function: Optional[callable] = None,
 ):
     """
     Download a playlist from YouTube, song by song, adding the metadata thats extracted from the video
@@ -273,11 +296,21 @@ def download_playlist(
         do_yield (bool): Whether to yield the metadata
         is_cli (bool): Whether the function is being called from the CLI
         verbosity (int): The verbosity level  0 to 2. 0 is no output, 1 is minimal output, 2 is full output
+        download_indicator_function (callable): A function to call to indicate that a download has started
     """
 
-    def log(message):
+    def log(message, indicator:Optional[callable]=None, no_indicator:Optional[int]=0):
+        """
+        Log a message
+        Args:
+            message (str): The message to log
+            indicator (callable): A function to call to indicate that a download has started
+            no_indicator (int): The status from 0 to x
+        """
         if verbosity > 1:
             print(message)
+        if indicator:
+            indicator(no_indicator)
 
     if dump_directory and not os.path.exists(dump_directory):
         raise Exception("Dump directory does not exist")
@@ -287,7 +320,7 @@ def download_playlist(
         try:
             start_time = time.time()
 
-            log("Attempting to grab: " + url)
+            log("Attempting to grab: " + url, download_indicator_function, 1)
             yt = download_stream_from_url(url)
             if yt:
                 meta_data = pull_meta_data(yt)
@@ -295,7 +328,7 @@ def download_playlist(
 
                 log("Attempting to download")
                 filename = read_write_audio(meta_data, dump_directory)
-                log("Download complete")
+                log("Download complete", download_indicator_function, 2)
 
                 set_metadata(save_path=filename, genre=genre, **meta_data)
                 log("MP3 Metadata saved")
@@ -307,6 +340,8 @@ def download_playlist(
 
                 if do_yield:
                     yield meta_data, time_taken
+
+                log("Download complete", download_indicator_function, 3)
             else:
                 if verbosity > 0:
                     log("Could not download: " + url)

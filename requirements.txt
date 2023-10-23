@@ -4,4 +4,5 @@ moviepy~=1.0.3
 mutagen~=1.47.0
 pyqt6~=6.4.2
 setuptools~=68.0.0
-qt_materail~=2.4.0
+qt_material~=2.4.0
+pyside6~=6.6.0

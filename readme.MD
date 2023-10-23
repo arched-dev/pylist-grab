@@ -14,22 +14,34 @@
   - [Graphical User Interface](#graphical-user-interface)
 - [Disclaimer](#disclaimer)
 - [License](#license)
-- [Contributing](#contributing)
 
 ## About
 
-`pylist` is designed as a tool to aid in downloading and organizing your music playlists. Whether you're a DJ looking for a simple way to manage tracks or someone who enjoys curating personal playlists, `pylist` has something to offer. Please note that this tool is created for **educational purposes only**.
+# Pylist
 
-## Features
+`pylist` is a comprehensive CLI and GUI tool designed to make your music management experience hassle-free and efficient. With just a few simple commands or clicks, you can download an entire YouTube playlist as MP3 files, complete with accurate filenames and rich metadata, including artwork, genre, artist, and more.
 
-- Download tracks from YouTube playlists
-- Organize your playlists with ease
-- Command-line and graphical interfaces
-- Add metadata to MP3 files
+## Why Choose Pylist?
 
+### Time-Saving
+Gone are the days of downloading tracks one at a time from YouTube via online services. `pylist` allows you to grab an entire playlist in one go, saving you both time and effort.
+
+### Rich Metadata
+Most online YouTube to MP3 converters do a poor job of preserving track metadata. `pylist` stands apart by not just downloading the tracks but also by populating the metadata fields. This includes the artwork, genre, artist name, and other ID3 tags, which are crucial for music organization.
+
+### Ideal for DJs and Music Enthusiasts
+If you're a DJ, you know how important it is to have your music library organized. Missing or incorrect metadata can create a chaotic experience when you're trying to quickly find the right track during a live set. `pylist` fills this gap by ensuring that each downloaded MP3 file is tagged correctly, allowing you to sort, filter, and search your music effortlessly in your DJ software.
+
+### User-Friendly Interface
+Whether you're comfortable with command lines or prefer a GUI, `pylist` has got you covered. The CLI version is powerful and flexible, while the GUI version provides an easy-to-use interface for those who are not as tech-savvy.
+
+## Legal and Ethical Use
+It's important to note that `pylist` is intended for educational purposes only. Downloading copyrighted music without authorization violates the musician's copyright, and we strongly encourage you to support the artists by purchasing their music legally. 
+
+By choosing `pylist`, you're not just opting for convenience; you're choosing a robust, feature-rich solution that respects the art of music organization as much as you do.
 ## Installation
 
-### Prerequisites
+### Prerequisites (linux)
 
 - Python 3.x
 - pip
@@ -77,7 +89,3 @@ This tool is intended for educational purposes only. Downloading copyrighted mus
 ## License
 
 MIT License. See `LICENSE` for more information.
-
-## Contributing
-
-We welcome contributions! Please read our `CONTRIBUTING.md` file for guidelines on how to contribute.
