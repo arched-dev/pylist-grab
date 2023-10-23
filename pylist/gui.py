@@ -395,3 +395,7 @@ def gui():
     ex = App()
     ex.setWindowIcon(QIcon("./assets/icon_256.ico"))
     sys.exit(app.exec())
+
+
+if __name__ == "__main__":
+    gui()
