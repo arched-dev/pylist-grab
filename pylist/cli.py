@@ -4,7 +4,10 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
-from downloader import validate_playlist, download_playlist
+try:
+    from downloader import validate_playlist, download_playlist
+except ImportError:
+    from pylist.downloader import validate_playlist, download_playlist
 
 
 class CustomArgParser(argparse.ArgumentParser):

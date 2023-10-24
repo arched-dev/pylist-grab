@@ -28,46 +28,49 @@ from pylist.downloader import (
     validate_playlist,
 )  # Replace these imports with your actual functions
 
+def get_file(path, filename):
+    # Split the path by '/' and remove any empty strings
+    split_path = [x for x in path.split('/') if x]
+    # Determine the base path
+    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+    alt_base = os.path.join(*os.path.split(base_path)[:-1])
+    # Loop through the directory levels in reverse order
+    for base in [base_path, alt_base]:
+        path_one = os.path.join(base, *split_path, filename)
+        path_two = os.path.join(base, split_path[0], filename)
+        path_three = os.path.join(base, split_path[1], filename)
+        for check_path in [path_one, path_two, path_three]:                            # Check if the file exists in the current path
+            if os.path.exists(check_path):
+                return check_path
+    # Return None if the file was not found
+    return None
+
+
+
 IS_WINDOWS_EXE = hasattr(sys, '_MEIPASS')
 WIZARD_TITLE = "How to Get a Valid YouTube Playlist URL"
 WIZARD_PAGES = [
     {
         "text": "First, head over to YouTube and use the search bar to look for a genre or artist. Avoid searching for specific songs at this stage.",
-        "image_path": './pylist/assets/page_1.png' if IS_WINDOWS_EXE else 'assets/page_1.png'
+        "image_path": get_file('/pylist/assets/','page_1.png')
     },
     {
         "text": "Once the search results are displayed, locate the 'Filter' button at the upper-right corner of the page. \n\nClick it and select 'Playlist' from the dropdown options.",
-        "image_path": './pylist/assets/page_2.png' if IS_WINDOWS_EXE else 'assets/page_2.png'
+        "image_path": get_file('/pylist/assets/','page_2.png')
     },
     {
         "text": "Browse through the filtered results to find a playlist that catches your interest.\n\nEnsure that the thumbnail indicates multiple videos, or look for a listing that includes a 'VIEW FULL PLAYLIST' button. \n\nOpen the playlist you've chosen.",
-        "image_path": './pylist/assets/page_3.png' if IS_WINDOWS_EXE else 'assets/page_3.png'
+        "image_path": get_file('/pylist/assets/','page_3.png')
     },
     {
         "text": "After the playlist page has loaded, you'll see a long list of videos on the right hand side of the page.\n\n You should see the playlist name at the top of this list, click on the 'playlist title' to view the playlist.",
-        "image_path": './pylist/assets/page_4.png' if IS_WINDOWS_EXE else 'assets/page_4.png'
+        "image_path": get_file('/pylist/assets/','page_4.png')
     },
     {
         "text": "You should now be on the playlist's dedicated page. \n\n Verify this by checking if the URL starts with 'youtube.com/playlist?...'. \n\n This is the URL you need.",
-        "image_path": './pylist/assets/page_5.png' if IS_WINDOWS_EXE else 'assets/page_5.png'
+        "image_path": get_file('/pylist/assets/','page_5.png')
     },
 ]
-
-
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    # Check if it's an absolute path
-    if os.path.isabs(relative_path):
-        return relative_path
-
-    # Remove the './' from the relative path if present
-    relative_path = relative_path.lstrip('./')
-
-    base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
-    print(base_path, 'getting img')
-    final_path = os.path.join(base_path, relative_path)
-    print(final_path, 'final path getting img')
-    return final_path
 
 
 class HowToPage(QWizardPage):
@@ -86,7 +89,7 @@ class HowToPage(QWizardPage):
         layout.addWidget(text_label)
 
         # Create a QLabel for the image
-        image = QPixmap(resource_path(image_path))
+        image = QPixmap(image_path)
         image_label = QLabel()
         image_label.setPixmap(image)
         image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Center align the image
@@ -392,11 +395,11 @@ def gui():
     app = PySide6.QtWidgets.QApplication(sys.argv)
 
     if IS_WINDOWS_EXE:
-        theme_path = resource_path('pylist/assets/dark_teal.xml')
-        icon_path = resource_path('pylist/assets/icon_256.ico')
+        theme_path = get_file('pylist/assets/', 'dark_teal.xml')
     else:
         theme_path = 'dark_teal.xml'
-        icon_path = 'assets/icon_256.ico'
+
+    icon_path = get_file('pylist/assets/','icon_256.ico')
 
     apply_stylesheet(app, theme=theme_path)  # Apply the dark teal theme
 
