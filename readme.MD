@@ -7,8 +7,9 @@
 - [About](#about)
 - [Features](#features)
 - [Installation](#installation)
-  - [Prerequisites](#prerequisites)
+  - [Prerequisites (linux)](#prerequisites)
   - [Installing via PyPI](#installing-via-pypi)
+  - [Installing on Windows](#installing-on-windows)
 - [Usage](#usage)
   - [Command-line Interface](#command-line-interface)
   - [Graphical User Interface](#graphical-user-interface)
@@ -36,9 +37,8 @@ If you're a DJ, you know how important it is to have your music library organise
 Whether you're comfortable with command lines or prefer a GUI, `pylist-grab` has got you covered. The CLI version is powerful and flexible, while the GUI version provides an easy-to-use interface for those who are not as tech-savvy.
 
 ## Legal and Ethical Use
-It's important to note that `pylist-grab` is intended for educational purposes only. Downloading copyrighted music without authorisation violates the musician's copyright, and we strongly encourage you to support the artists by purchasing their music legally. 
+`pylist-grab` is developed solely for educational and demonstration purposes. It is crucial to understand that downloading copyrighted music without proper authorization violates copyright laws and deprives artists of their due earnings. We do not condone, endorse, or encourage the illegal downloading, redistribution, or financial exploitation of copyrighted material. If you appreciate an artist's work, we strongly urge you to support them through legal means, such as purchasing their music.
 
-By choosing `pylist-grab`, you're not just opting for convenience; you're choosing a robust, feature-rich solution that respects the art of music organisation as much as you do.
 ## Installation
 
 ### Prerequisites (linux)
@@ -53,9 +53,11 @@ To install `pylist-grab` in linux, open your terminal and run the following comm
 ```bash
 pip install pylist-grab
 ```
-### Running in Windows
+### Installing on Windows
 
 Download the fully compiled `pylist-grab.exe` and run. 
+[Download here](https://github.com/lewis-morris/pylist-grab/releases/download/v0.0.3/pylist-grab.exe)
+
 
 ## Usage
 
@@ -87,8 +89,7 @@ This will open the graphical user interface where you can download and organise 
 
 ## Disclaimer
 
-This tool is intended for educational purposes only. Downloading copyrighted music without authorisation infringes upon the rights of the artists and content creators. If you like a track, we strongly recommend purchasing it to support the artists.
-
+This tool is intended strictly for educational and demonstration purposes. By using `pylist-grab`, you assume full responsibility for any legal or ethical repercussions that may arise from its use or misuse. We expressly disclaim any liability for the unauthorised use of this tool and do not condone the unlawful downloading, redistribution, or financial gain from artists' copyrighted material. Should you choose to use this tool, you do so at your own risk, acknowledging that it is your responsibility to comply with all applicable laws.
 ## License
 
 MIT Licence. See `LICENSE` for more information.
