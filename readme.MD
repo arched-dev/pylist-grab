@@ -1,6 +1,6 @@
 # pylist-grab: Your Music Downloader and Playlist Organizer
 
-> 🎵 A Python-based utility for downloading and organizing your playlists. Built for educational purposes.
+> 🎵 A Python-based utility for downloading and organising your playlists. Built for educational purposes.
 
 ## Table of Contents
 
@@ -30,15 +30,15 @@ Gone are the days of downloading tracks one at a time from YouTube via online se
 Most online YouTube to MP3 converters do a poor job of preserving track metadata. `pylist-grab` stands apart by not just downloading the tracks but also by populating the metadata fields. This includes the artwork, genre, artist name, and other ID3 tags, which are crucial for music organization.
 
 ### Ideal for DJs and Music Enthusiasts
-If you're a DJ, you know how important it is to have your music library organized. Missing or incorrect metadata can create a chaotic experience when you're trying to quickly find the right track during a live set. `pylist-grab` fills this gap by ensuring that each downloaded MP3 file is tagged correctly, allowing you to sort, filter, and search your music effortlessly in your DJ software.
+If you're a DJ, you know how important it is to have your music library organised. Missing or incorrect metadata can create a chaotic experience when you're trying to quickly find the right track during a live set. `pylist-grab` fills this gap by ensuring that each downloaded MP3 file is tagged correctly, allowing you to sort, filter, and search your music effortlessly in your DJ software.
 
 ### User-Friendly Interface
 Whether you're comfortable with command lines or prefer a GUI, `pylist-grab` has got you covered. The CLI version is powerful and flexible, while the GUI version provides an easy-to-use interface for those who are not as tech-savvy.
 
 ## Legal and Ethical Use
-It's important to note that `pylist-grab` is intended for educational purposes only. Downloading copyrighted music without authorization violates the musician's copyright, and we strongly encourage you to support the artists by purchasing their music legally. 
+It's important to note that `pylist-grab` is intended for educational purposes only. Downloading copyrighted music without authorisation violates the musician's copyright, and we strongly encourage you to support the artists by purchasing their music legally. 
 
-By choosing `pylist-grab`, you're not just opting for convenience; you're choosing a robust, feature-rich solution that respects the art of music organization as much as you do.
+By choosing `pylist-grab`, you're not just opting for convenience; you're choosing a robust, feature-rich solution that respects the art of music organisation as much as you do.
 ## Installation
 
 ### Prerequisites (linux)
@@ -83,12 +83,12 @@ If you prefer using a graphical interface, you can run:
 pylistgrab-gui
 ```
 
-This will open the graphical user interface where you can download and organize your music.
+This will open the graphical user interface where you can download and organise your music.
 
 ## Disclaimer
 
-This tool is intended for educational purposes only. Downloading copyrighted music without authorization infringes upon the rights of the artists and content creators. If you like a track, we strongly recommend purchasing it to support the artists.
+This tool is intended for educational purposes only. Downloading copyrighted music without authorisation infringes upon the rights of the artists and content creators. If you like a track, we strongly recommend purchasing it to support the artists.
 
 ## License
 
-MIT License. See `LICENSE` for more information.
+MIT Licence. See `LICENSE` for more information.
