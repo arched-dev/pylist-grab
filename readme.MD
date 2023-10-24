@@ -7,8 +7,9 @@
 - [About](#about)
 - [Features](#features)
 - [Installation](#installation)
-  - [Prerequisites](#prerequisites)
+  - [Prerequisites (linux)](#prerequisites)
   - [Installing via PyPI](#installing-via-pypi)
+  - [Installing on Windows](#installing-on-windows)
 - [Usage](#usage)
   - [Command-line Interface](#command-line-interface)
   - [Graphical User Interface](#graphical-user-interface)
@@ -52,9 +53,11 @@ To install `pylist-grab` in linux, open your terminal and run the following comm
 ```bash
 pip install pylist-grab
 ```
-### Running in Windows
+### Installing on Windows
 
 Download the fully compiled `pylist-grab.exe` and run. 
+[Download pylist-grab.exe here](https://github.com/lewis-morris/pylist-grab/releases/download/v0.0.3/pylist-grab.exe)
+
 
 ## Usage
 
