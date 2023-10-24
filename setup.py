@@ -6,14 +6,14 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 
 setup(
-    name="pylist",
+    name="pylist-grab",
     version="0.0.1",
     packages=find_packages(),
-    url="https://github.com/lewis-morris/pylist",
+    url="https://github.com/lewis-morris/pylist-grab",
     license="MIT",
     author="lewis",
     author_email="lewis.morris@gmail.com",
-    description="YouTube playlist grabber with metadata",
+    description="YouTube playlist grabber with metadata injector",
     long_description=readme,  # This is the new line
     long_description_content_type="text/markdown",  # This is the new line
     entry_points={

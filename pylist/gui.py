@@ -28,27 +28,28 @@ from pylist.downloader import (
     validate_playlist,
 )  # Replace these imports with your actual functions
 
+IS_WINDOWS_EXE = hasattr(sys, '_MEIPASS')
 WIZARD_TITLE = "How to Get a Valid YouTube Playlist URL"
 WIZARD_PAGES = [
     {
         "text": "First, head over to YouTube and use the search bar to look for a genre or artist. Avoid searching for specific songs at this stage.",
-        "image_path": "./pylist/assets/page_1.png",
+        "image_path": './pylist/assets/page_1.png' if IS_WINDOWS_EXE else 'assets/page_1.png'
     },
     {
         "text": "Once the search results are displayed, locate the 'Filter' button at the upper-right corner of the page. \n\nClick it and select 'Playlist' from the dropdown options.",
-        "image_path": "./pylist/assets/page_2.png",
+        "image_path": './pylist/assets/page_2.png' if IS_WINDOWS_EXE else 'assets/page_2.png'
     },
     {
         "text": "Browse through the filtered results to find a playlist that catches your interest.\n\nEnsure that the thumbnail indicates multiple videos, or look for a listing that includes a 'VIEW FULL PLAYLIST' button. \n\nOpen the playlist you've chosen.",
-        "image_path": "./pylist/assets/page_3.png",
+        "image_path": './pylist/assets/page_3.png' if IS_WINDOWS_EXE else 'assets/page_3.png'
     },
     {
         "text": "After the playlist page has loaded, you'll see a long list of videos on the right hand side of the page.\n\n You should see the playlist name at the top of this list, click on the 'playlist title' to view the playlist.",
-        "image_path": "./pylist/assets/page_4.png",
+        "image_path": './pylist/assets/page_4.png' if IS_WINDOWS_EXE else 'assets/page_4.png'
     },
     {
         "text": "You should now be on the playlist's dedicated page. \n\n Verify this by checking if the URL starts with 'youtube.com/playlist?...'. \n\n This is the URL you need.",
-        "image_path": "./pylist/assets/page_5.png",
+        "image_path": './pylist/assets/page_5.png' if IS_WINDOWS_EXE else 'assets/page_5.png'
     },
 ]
 
@@ -67,6 +68,7 @@ def resource_path(relative_path):
     final_path = os.path.join(base_path, relative_path)
     print(final_path, 'final path getting img')
     return final_path
+
 
 class HowToPage(QWizardPage):
     def __init__(self, text, image_path):
@@ -103,6 +105,7 @@ class HowToWizard(QWizard):
             text = page_info["text"]
             image_path = page_info["image_path"]
             self.addPage(HowToPage(text, image_path))
+
 
 class App(QMainWindow):
     download_progress = Signal(int, str, str, str, str, bool)
@@ -187,7 +190,7 @@ class App(QMainWindow):
 
     def open_github(self):
         # Replace 'https://github.com/your_username/your_repository' with your actual GitHub repository URL
-        github_url = 'https://github.com/lewis-morris/pylist'
+        github_url = 'https://github.com/lewis-morris/pylist-grab'
         webbrowser.open(github_url)
 
     def create_menu(self):
@@ -340,7 +343,6 @@ class App(QMainWindow):
         if estimated_remaining:
             self.progress_label.setText(f"{i}/{self.playlist_length} (Estimated time remaining: {estimated_remaining})")
 
-
     total_time = 0  # Total time taken for all songs in seconds
 
     def set_downloading(self, dots=0):
@@ -355,9 +357,9 @@ class App(QMainWindow):
         # set the initial progress message
         self.download_progress.emit(0, None, None, None, None, True)
 
-
         for i, (song_meta, time_taken) in enumerate(
-                download_playlist(self.playlist, self.output_folder, genre=self.genre_input.text(), download_indicator_function=self.set_downloading)
+                download_playlist(self.playlist, self.output_folder, genre=self.genre_input.text(),
+                                  download_indicator_function=self.set_downloading)
         ):
             title = song_meta["title"]
             artist = song_meta["author"]
@@ -378,7 +380,7 @@ class App(QMainWindow):
                 i + 1, artist, title, duration, estimated_remaining_str, False
             )
 
-            self.download_progress.emit(i+1, None, None, None, None, True)
+            self.download_progress.emit(i + 1, None, None, None, None, True)
 
             time.sleep(0.1)
 
@@ -389,7 +391,7 @@ class App(QMainWindow):
 def gui():
     app = PySide6.QtWidgets.QApplication(sys.argv)
 
-    if hasattr(sys, '_MEIPASS'):
+    if IS_WINDOWS_EXE:
         theme_path = resource_path('pylist/assets/dark_teal.xml')
         icon_path = resource_path('pylist/assets/icon_256.ico')
     else:
@@ -405,7 +407,6 @@ def gui():
     ex.setWindowIcon(app_icon)  # Usually redundant, but can't hurt.
 
     sys.exit(app.exec())
-
 
 
 if __name__ == "__main__":

@@ -1,1 +1,1 @@
-from pylist import download_playlist, gui
+from pylist-grab import download_playlist, gui

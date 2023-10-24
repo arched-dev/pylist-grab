@@ -2,18 +2,15 @@ import re
 import time
 from typing import Optional
 
-from pytube import Playlist, YouTube
+import requests
 from moviepy.editor import *
-import requests
-from mutagen.id3 import ID3, TIT2, TPE1, COMM, APIC, TCON
-from mutagen.mp3 import MP3
-
+from mutagen.id3 import TCON
 # Function to set metadata for MP3 files
-from mutagen.id3 import ID3, TIT2, TPE1, COMM, APIC, TDRC
+from mutagen.id3 import TIT2, TPE1, COMM, APIC, TDRC
 from mutagen.mp3 import MP3
-import requests
+from pylist.utils import run_silently
+from pytube import Playlist, YouTube
 
-from utils import run_silently
 
 REMOVE_WORDS = [
     "Official Video",
@@ -130,6 +127,12 @@ def set_metadata(
 
 
 def clean_title(title: str, featured: str):
+    """
+    Clean the title of the song
+    Args:
+        title (str): The title of the song
+        featured (str): The featured artist
+    """
     for word in REMOVE_WORDS:
         title = (
             title.replace(word, "")
@@ -295,7 +298,7 @@ def download_playlist(
         is_cli=False,
         verbosity=1,
         download_indicator_function: Optional[callable] = None,
-        silence: Optional[bool]= False,
+        silence: Optional[bool] = False,
 ):
     """
     Download a playlist from YouTube, song by song, adding the metadata thats extracted from the video
