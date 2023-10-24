@@ -56,7 +56,7 @@ pip install pylist-grab
 ### Installing on Windows
 
 Download the fully compiled `pylist-grab.exe` and run. 
-[Download pylist-grab.exe here](https://github.com/lewis-morris/pylist-grab/releases/download/v0.0.3/pylist-grab.exe)
+[Download here](https://github.com/lewis-morris/pylist-grab/releases/download/v0.0.3/pylist-grab.exe)
 
 
 ## Usage
