@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="pylist-grab",
-    version="0.0.1",
+    version="0.0.2",
     packages=find_packages(),
     url="https://github.com/lewis-morris/pylist-grab",
     license="MIT",
@@ -18,8 +18,8 @@ setup(
     long_description_content_type="text/markdown",  # This is the new line
     entry_points={
         "console_scripts": [
-            "pylist=pylist.cli:main",
-            "pylist-gui=pylist.gui:gui",
+            "pylistgrab=pylist.cli:main",
+            "pylistgrab-gui=pylist.gui:gui",
         ]
     },
     package_data={
@@ -30,7 +30,7 @@ setup(
         "pytube~=15.0.0",
         "moviepy~=1.0.3",
         "mutagen~=1.47.0",
-        "pyqt6~=6.4.2",
+        "pyside6~=6.6.0",
         "setuptools~=68.0.0",
         "qt_material~=2.4.0",
     ],

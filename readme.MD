@@ -61,10 +61,10 @@ Download the fully compiled `pylist-grab.exe` and run.
 
 ### Command-line Interface
 
-To use `pylist-grab` from the command line, you can utilize various options as shown below:
+To use `pylistgrab` from the command line, you can utilise various options as shown below:
 
 ```bash
-pylist-grab -d <destination_directory> <youtube_playlist_url> [-g <genre>]
+pylistgrab -d <destination_directory> <youtube_playlist_url> [-g <genre>]
 ```
 
 Here, `-d` specifies the directory where the files will be saved, and `-g` is used to specify the genre of the songs. The YouTube playlist URL is a required argument.
@@ -72,7 +72,7 @@ Here, `-d` specifies the directory where the files will be saved, and `-g` is us
 For example:
 
 ```bash
-pylist-grab -d ~/Music/MyPlaylist https://www.youtube.com/playlist?list=PLxxxxxx -g "Pop"
+pylistgrab -d ~/Music/MyPlaylist https://www.youtube.com/playlist?list=PLxxxxxx -g "Pop"
 ```
 
 ### Graphical User Interface
@@ -80,7 +80,7 @@ pylist-grab -d ~/Music/MyPlaylist https://www.youtube.com/playlist?list=PLxxxxxx
 If you prefer using a graphical interface, you can run:
 
 ```bash
-pylist-grab-gui
+pylistgrab-gui
 ```
 
 This will open the graphical user interface where you can download and organize your music.
