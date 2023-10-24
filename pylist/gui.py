@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QMessageBox,
     QHBoxLayout,
-    QMainWindow, QSizePolicy, QWizardPage, QWizard,
+    QMainWindow, QSizePolicy, QWizardPage, QWizard, QSplashScreen,
 )
 from qt_material import apply_stylesheet
 
@@ -390,9 +390,26 @@ class App(QMainWindow):
         self.download_button.setText("Start Downloading")
         self.change_all(True)
 
+def show_splash(app: QApplication):
+    """
+    Show a splash screen while the application is loading.
+    """
+    splash_pix = QPixmap(get_file('pylist/assets/','splash_small.png'))
+    splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+    # Show splash screen
+    splash.show()
+    app.processEvents()
+    # Simulate a time-consuming operation
+    time.sleep(2)
+    # Close splash and continue with the main application
+    splash.close()
 
 def gui():
     app = PySide6.QtWidgets.QApplication(sys.argv)
+
+    show_splash(app)
+
+
 
     if IS_WINDOWS_EXE:
         theme_path = get_file('pylist/assets/', 'dark_teal.xml')
