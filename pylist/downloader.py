@@ -1,16 +1,33 @@
+import io
+import os
+import platform
 import re
+import subprocess
+import sys
+import tempfile
 import time
-from typing import Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
+from queue import Queue
+from typing import Optional, Generator, Dict, Any, Callable
 
 import requests
-from moviepy.editor import *
+from moviepy.editor import AudioFileClip
 from mutagen.id3 import TCON
 # Function to set metadata for MP3 files
 from mutagen.id3 import TIT2, TPE1, COMM, APIC, TDRC
 from mutagen.mp3 import MP3
-from pylist.utils import run_silently
 from pytube import Playlist, YouTube
+import logging
 
+try:
+    from pylist.logging_config import setup_logger  # This line configures your logger
+    from pylist.utils import run_silently, sanitize_filename
+except ImportError:
+    from logging_config import setup_logger  # This line configures your logger
+    from utils import run_silently, sanitize_filename
+
+IS_WINDOWS_EXE = hasattr(sys, '_MEIPASS')
 
 REMOVE_WORDS = [
     "Official Video",
@@ -50,14 +67,12 @@ REMOVE_WORDS = [
     "(Clean)",
     "Demo",
     "Demo",
+    "(FREE)",
     "Teaser",
     "Teaser",
     "Performance Video",
     "Performance Video",
 ]
-
-
-# Function to set metadata for MP3 files
 
 
 def set_metadata(
@@ -188,20 +203,21 @@ def validate_playlist(playlist_url: str):
     return playlist
 
 
-def download_stream_from_url(song_url: str):
-    """
-    Download the audio stream from the YouTube video
-    Args:
-        song_url (str): The URL of the YouTube video
+def remove_and_return_bootleg_remix(input_str):
+    # Regex pattern to find '(xxxxx bootleg)' or '(xxxxx remix)', case insensitive
+    pattern = r"\((.*? bootleg)\)|\((.*? remix)\)"
 
-    Returns:
-        YouTube: The YouTube object
-    """
-    # Get the audio stream with the highest bitrate
-    yt = YouTube(song_url)
-    audio_stream = yt.streams.filter(only_audio=True).order_by("abr").desc().first()
-    audio_stream.download(filename="temp_audio", max_retries=5)
-    return yt
+    # Search for the pattern
+    match = re.search(pattern, input_str, re.IGNORECASE)
+
+    if match:
+        # Found the pattern, remove it from the string
+        found_text = match.group().strip('()')
+        cleaned_str = re.sub(pattern, "", input_str, flags=re.IGNORECASE).strip()
+        return cleaned_str, found_text
+    else:
+        # Pattern not found, return original string and None
+        return input_str, None
 
 
 def extract_featured_artist(song_info):
@@ -221,7 +237,7 @@ def extract_featured_artist(song_info):
     return None
 
 
-def pull_meta_data(yt: str):
+def pull_meta_data(yt: YouTube) -> Dict[str, Any]:
     """
     Pull metadata from the YouTube video
     Args:
@@ -243,11 +259,15 @@ def pull_meta_data(yt: str):
         author = yt.author
         title = yt.title
 
+    title, extra_artist = remove_and_return_bootleg_remix(title)
+
     title = clean_title(title, featured)
     author = clean_title(author, featured)
 
     if featured:
-        author = f"{author}, {featured}"
+        author = f"{author} ft. {featured}"
+    if extra_artist:
+        author = f"{author} ({extra_artist})"
 
     # Determine filename, author, and title
     if "-" not in title:
@@ -272,99 +292,84 @@ def pull_meta_data(yt: str):
     }
 
 
-def read_write_audio(meta_data: dict, dump_directory: str):
-    """
-    Convert the audio file to mp3 format
-    Args:
-        meta_data (dict): The metadata
-        dump_directory (str): The directory to dump the file to
+def pull_audio_and_meta_data(url: str, dump_directory: str) -> Dict[str, Any]:
+    """Pull meta data from a youtube url."""
+    # Existing meta data extraction logic
+    with tempfile.TemporaryDirectory() as temp_dir:
 
-    Returns:
-        filename (str): The name of the file
-    """
-    audio = AudioFileClip("temp_audio")
-    save_filename = f"{meta_data['filename']}.mp3"
-    final_save_filename = os.path.join(dump_directory, save_filename)
-    audio.write_audiofile(final_save_filename)
-    os.remove("temp_audio")
-    return final_save_filename
+        yt = YouTube(url)
+        meta_data = pull_meta_data(yt)
+        audio_stream = yt.streams.filter(only_audio=True).first()
+
+        temp_save_path = audio_stream.download(output_path=temp_dir)
+        logging.debug(f"temp_save_path: {temp_save_path}")
+
+        final_save_path = os.path.join(dump_directory, sanitize_filename(meta_data["filename"] + ".mp3"))
+
+        audio = None
+        try:
+            if os.path.isfile(temp_save_path) and os.path.isdir(os.path.split(final_save_path)[0]):
+                audio = AudioFileClip(temp_save_path)
+                audio.write_audiofile(final_save_path, write_logfile=False, logger=None, verbose=False)
+            else:
+                logging.error("Either the temp_save_path is not a file or the final_save_path is not a directory")
+        except Exception as e:
+            logging.error("Failed to process audio")
+            logging.error(str(e), exc_info=True)
+
+        if hasattr(audio, "close"):
+            audio.close()
+
+        # Temp files will be deleted once we're out of the 'with' block
+    return meta_data, final_save_path
 
 
-def download_playlist(
-        playlist: Playlist,
-        dump_directory="./",
-        genre: Optional[str] = None,
-        do_yield=True,
-        is_cli=False,
-        verbosity=1,
-        download_indicator_function: Optional[callable] = None,
-        silence: Optional[bool] = False,
-):
-    """
-    Download a playlist from YouTube, song by song, adding the metadata thats extracted from the video
+def process_single_video(url: str, dump_directory: str, genre: Optional[str], verbosity: int,
+                         silence: Optional[bool]) -> Dict[str, Any]:
+    """Process a single video URL and return the metadata and time taken."""
+    try:
+        start_time = time.time()
 
-    Args:
-        playlist (Playlist): The playlist object
-        dump_directory (str): The directory to dump the files to
-        genre (str): The genre of the songs
-        do_yield (bool): Whether to yield the metadata
-        is_cli (bool): Whether the function is being called from the CLI
-        verbosity (int): The verbosity level  0 to 2. 0 is no output, 1 is minimal output, 2 is full output
-        download_indicator_function (callable): A function to call to indicate that a download has started
-        silence (bool): Whether to silence the output
-    """
+        if IS_WINDOWS_EXE:
+            meta_data, final_save_path = pull_audio_and_meta_data(url, dump_directory)
+            set_metadata(save_path=final_save_path, genre=genre, **meta_data)
+        else:
+            meta_data, final_save_path = run_silently(pull_audio_and_meta_data, silence, url, dump_directory)
+            run_silently(set_metadata, silence, save_path=final_save_path, genre=genre, **meta_data)
 
-    def log(message, indicator: Optional[callable] = None, no_indicator: Optional[int] = 0):
-        """
-        Log a message
-        Args:
-            message (str): The message to log
-            indicator (callable): A function to call to indicate that a download has started
-            no_indicator (int): The status from 0 to x
-        """
-        if verbosity > 1:
-            print(message)
-        if indicator:
-            indicator(no_indicator)
+        end_time = time.time()
+        return {"metadata": meta_data, "time_taken": end_time - start_time, "error": None}
+    except Exception as e:
+        if verbosity > 0:
+            logging.error(f"Could not download: {url} because of {e}")
+        return {"metadata": None, "time_taken": None, "error": e}
 
-    if dump_directory and not os.path.exists(dump_directory):
+
+def download_playlist(playlist: Playlist,
+                      dump_directory: str = "./",
+                      genre: Optional[str] = None,
+                      do_yield: bool = True,
+                      verbosity: int = 1,
+                      download_indicator_function: Optional[Callable[[int], None]] = None,
+                      silence: Optional[bool] = False) -> Generator[Dict[str, Any], None, None]:
+    """Download a playlist from YouTube, song by song, adding the metadata extracted from the video."""
+    if not os.path.exists(dump_directory):
         raise Exception("Dump directory does not exist")
 
-    # Loop through all videos in the playlist
+    def log_message(message: str, indicator: Optional[Callable[[int], None]] = None, status: Optional[int] = 0):
+        """Logs messages based on verbosity and calls an optional indicator function."""
+        if verbosity > 1:
+            logging.info(message)
+        if indicator:
+            indicator(status)
+
     for url in playlist.video_urls:
-        try:
-
-            start_time = time.time()
-
-            log("Attempting to grab: " + url, download_indicator_function, 1)
-            yt = run_silently(download_stream_from_url, silence, url)
-            if yt:
-                meta_data = pull_meta_data(yt)
-                log("Metadata received: " + str(meta_data))
-
-                log("Attempting to download")
-                filename = run_silently(read_write_audio, silence, meta_data, dump_directory)
-
-                log("Download complete", download_indicator_function, 2)
-
-                run_silently(set_metadata, silence, save_path=filename, genre=genre, **meta_data)
-                log("MP3 Metadata saved")
-
-                end_time = time.time()
-                time_taken = (
-                        end_time - start_time
-                )  # Time taken for this download in seconds
-
-                if do_yield:
-                    yield meta_data, time_taken
-
-                log("Download complete", download_indicator_function, 3)
-            else:
-                if verbosity > 0:
-                    log("Could not download: " + url)
-
-
-        except Exception as e:
+        log_message(f"Attempting to grab: {url}", download_indicator_function, 1)
+        result = process_single_video(url, dump_directory, genre, verbosity, silence)
+        if result["metadata"]:
+            if do_yield:
+                yield result
+            log_message("Download complete", download_indicator_function, 3)
+        else:
             if verbosity > 0:
-                log(f"Could not download: {url} because of {e}")
-            continue
+                logging.error(f"Could not download: {url}")
