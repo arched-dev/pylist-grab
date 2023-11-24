@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="pylist-grab",
-    version="0.0.3",
+    version="0.0.5",
     packages=find_packages(),
     url="https://github.com/lewis-morris/pylist-grab",
     license="MIT",
@@ -22,6 +22,7 @@ setup(
             "pylistgrab-gui=pylist.gui:gui",
         ]
     },
+    include_package_data=True,
     package_data={
         "pylist": ["pylist/assets/*.png", "pylist/assets/*.ico"],
     },
@@ -31,6 +32,7 @@ setup(
         "moviepy~=1.0.3",
         "mutagen~=1.47.0",
         "pyside6~=6.6.0",
+        "pyside6-essentials~=6.6.0",
         "setuptools~=68.0.0",
         "qt_material~=2.4.0",
     ],

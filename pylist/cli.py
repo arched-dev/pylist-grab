@@ -5,7 +5,7 @@ from datetime import timedelta
 from pathlib import Path
 
 try:
-    from downloader import validate_playlist, download_playlist
+    from downloader import validate_playlist, download_playlist, download_playlist_threaded
 except ImportError:
     from pylist.downloader import validate_playlist, download_playlist
 
@@ -31,11 +31,43 @@ def print_progress_bar(completed, total, author, title, avg_time_per_item, bar_l
     estimated_time_str = str(timedelta(seconds=round(estimated_time_left)))
 
     sys.stdout.write(
-        f"\r[{arrow}{spaces}] {int(progress * 100)}% Complete ({completed}/{total} ~{estimated_time_str} left) - Latest Download: {author} - {title}                  "
+        f"\r[{arrow}{spaces}] {int(progress * 100)}% Complete ({completed}/{total} ~{estimated_time_str} left) - Latest Download: {author} - {title}                                          "
     )
     sys.stdout.flush()
 
-def main():
+
+def confirm_dump_dir():
+    """
+    If no dump directory is supplied, ask the user for confirmation to use the default directory.
+    """
+
+    # Determine the platform-specific desktop directory
+    desktop = str(Path.home() / "Desktop")
+    default_directory = os.path.join(desktop, "Youtube_MP3_dump")
+
+    # Ask for user confirmation
+    confirmation = input(
+        f"No dump directory supplied. Do you want to save files to the default directory: {default_directory}? [y/n] "
+    ).lower()
+
+    if confirmation == "y":
+        dump_directory = default_directory
+        # Create the directory if it doesn't exist
+        if not os.path.exists(dump_directory):
+            os.makedirs(dump_directory)
+    else:
+        print("Operation cancelled.")
+        return
+
+    return dump_directory
+
+
+
+def return_get_cli_args():
+    """
+    Returns a function that parses the command line arguments.
+
+    """
     parser = CustomArgParser(
         description="Download a YouTube playlist and add metadata to MP3 files."
     )
@@ -45,48 +77,40 @@ def main():
     parser.add_argument("-g", "--genre", required=False, help="Genre of the songs")
     parser.add_argument("url", help="YouTube playlist URL")
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+def main():
+
+    args = return_get_cli_args()  # Get the command line arguments
 
     playlist_url = args.url
     dump_directory = args.dump_dir
     genre = args.genre
 
     if dump_directory is None:
-        # Determine the platform-specific desktop directory
-        desktop = str(Path.home() / "Desktop")
-        default_directory = os.path.join(desktop, "Youtube_MP3_dump")
+        dump_directory = confirm_dump_dir()
 
-        # Ask for user confirmation
-        confirmation = input(
-            f"No dump directory supplied. Do you want to save files to the default directory: {default_directory}? [y/n] "
-        ).lower()
 
-        if confirmation == "y":
-            dump_directory = default_directory
-            # Create the directory if it doesn't exist
-            if not os.path.exists(dump_directory):
-                os.makedirs(dump_directory)
-        else:
-            print("Operation cancelled.")
-            return
-
-    playlist = validate_playlist(
-        playlist_url
-    )  # Implement this function to get a Playlist object
-    total_songs = len(playlist)  # Assuming the Playlist object can be length-checked
+    playlist = validate_playlist(playlist_url)
+    total_songs = len(playlist)
 
     total_time_taken = 0
 
-    for i, (meta_data, time_taken) in enumerate(download_playlist(playlist, dump_directory, genre, silence=True)
-    ):
+    for i, data in enumerate(download_playlist(playlist, dump_directory, genre, silence=True)):
+        if "metadata" in data:
+            song_meta = data["metadata"]
+            time_taken = data["time_taken"]
+        else:
+            song_meta, time_taken = data
+
         total_time_taken += time_taken
         avg_time_per_item = total_time_taken / (i + 1)
 
         print_progress_bar(
             i + 1,
             total_songs,
-            meta_data["author"],
-            meta_data["title"],
+            song_meta["author"],
+            song_meta["title"],
             avg_time_per_item,
         )
 
