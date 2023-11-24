@@ -4,7 +4,7 @@ from typing import Optional
 
 import requests
 from moviepy.editor import *
-from mutagen.id3 import TCON
+from mutagen.id3 import TCON, TALB
 # Function to set metadata for MP3 files
 from mutagen.id3 import TIT2, TPE1, COMM, APIC, TDRC
 from mutagen.mp3 import MP3
@@ -65,6 +65,7 @@ def set_metadata(
         filename: str,
         author: str,
         title: str,
+        album: str,
         artwork: str,
         keywords: str,
         comment: str,
@@ -78,6 +79,7 @@ def set_metadata(
         filename (str): The name of the file
         author (str): The author of the song
         title (str): The title of the song
+        album (str),  The album name
         artwork (str): The URL of the artwork
         keywords (str): The keywords
         comment (str): The comment
@@ -97,12 +99,29 @@ def set_metadata(
 
     if title:
         audio["TIT2"] = TIT2(encoding=3, text=title)
+        audio.save()
+        audio = MP3(save_path)
+
     if author:
         audio["TPE1"] = TPE1(encoding=3, text=author)
+        audio.save()
+        audio = MP3(save_path)
+
+    if album:  # Set the album name
+        audio["TALB"] = TALB(encoding=3, text=album)
+        audio.save()
+        audio = MP3(save_path)
+
     if comment:
         audio["COMM"] = COMM(encoding=3, lang="eng", desc="desc", text=comment)
+        audio.save()
+        audio = MP3(save_path)
+
     if date:
         audio["TDRC"] = TDRC(encoding=3, text=str(date))  # Setting the release date
+        audio.save()
+        audio = MP3(save_path)
+
 
     # Add featured artist if provided
     featured_artist = grab_ft(title)
@@ -110,8 +129,13 @@ def set_metadata(
         featured_artist_tag = TPE1(encoding=3, text=featured_artist)
         if "TPE2" in audio:
             audio["TPE2"].text[0] = featured_artist
+            audio.save()
+
         else:
             audio["TPE2"] = featured_artist_tag
+            audio.save()
+        audio = MP3(save_path)
+
 
     # Download and add artwork
     if artwork:
@@ -119,11 +143,13 @@ def set_metadata(
         audio.tags.add(
             APIC(encoding=3, mime="image/jpeg", type=3, desc="Cover", data=artwork)
         )
+        audio.save()
+
     # Add genre if provided
     if genre:
         audio["TCON"] = TCON(encoding=3, text=genre)
+        audio.save()
 
-    audio.save()
 
 
 def clean_title(title: str, featured: str):
@@ -220,6 +246,11 @@ def extract_featured_artist(song_info):
 
     return None
 
+def pull_genre(title):
+    options = ["Deep House", "Electro House", "Future House", "Progressive House", "Tech House", "Tropical House", "Techno", "Detroit Techno", "Minimal Techno", "Dub Techno", "Industrial Techno", "Drum and Bass", "Liquid Drum and Bass", "Jump-Up", "Neurofunk", "Jungle", "Dubstep", "Brostep", "Chillstep", "Trance", "Progressive Trance", "Psytrance (Psychedelic Trance)", "Vocal Trance", "Uplifting Trance", "Electro", "Electroclash", "Electropop", "EDM", "Big Room", "Dance-Pop", "Ambient", "Ambient House", "Dark Ambient", "Drone Music", "Breakbeat", "Nu Skool Breaks", "Big Beat", "Breakcore", "Hardcore", "Happy Hardcore", "Gabber", "UK Hardcore", "Industrial", "EBM", "Aggrotech", "IDM", "Glitch", "Drill 'n' Bass", "Trip-Hop", "Downtempo", "Glitch Hop", "Moombahton", "Future Bass", "Grime", "Trap", "Hybrid Trap", "Synthwave", "Vaporwave", "Outrun", "Chillwave", "House",  "DnB", "Drum & Bass", "Drum & base",  ]
+    for op in options:
+        if op.lower() in title.lower():
+            return op
 
 def pull_meta_data(yt: str):
     """
@@ -347,7 +378,7 @@ def download_playlist(
 
                 log("Download complete", download_indicator_function, 2)
 
-                run_silently(set_metadata, silence, save_path=filename, genre=genre, **meta_data)
+                run_silently(set_metadata, silence, save_path=filename, genre=genre, **{**meta_data, **{"album":playlist.title}})
                 log("MP3 Metadata saved")
 
                 end_time = time.time()
