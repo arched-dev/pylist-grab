@@ -1,37 +1,19 @@
 import os
 import subprocess
 import sys
-import threading
 import time
 import webbrowser
 
 import PySide6
-from PySide6.QtCore import Qt, Signal, Slot, QSize
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QPixmap, QAction, QIcon, QFont
-from PySide6.QtWidgets import (
-    QApplication,
-    QWidget,
-    QVBoxLayout,
-    QLineEdit,
-    QPushButton,
-    QFileDialog,
-    QLabel,
-    QProgressBar,
-    QScrollArea,
-    QMessageBox,
-    QHBoxLayout,
-    QMainWindow,
-    QSizePolicy,
-    QWizardPage,
-    QWizard,
-    QSplashScreen, QListWidget, QListWidgetItem,
-)
+from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLineEdit, QPushButton, QFileDialog, QLabel,
+                               QProgressBar, QMessageBox, QHBoxLayout, QMainWindow, QSizePolicy, QWizardPage, QWizard,
+                               QSplashScreen, QListWidget, QListWidgetItem, )
 from qt_material import apply_stylesheet
 
-from pylist.downloader import (
-    download_playlist,
-    validate_playlist, pull_genre,
-)  # Replace these imports with your actual functions
+from pylist.downloader import (download_playlist, validate_playlist,
+                               pull_genre, )  # Replace these imports with your actual functions
 
 
 def get_file(path, filename):
@@ -45,11 +27,7 @@ def get_file(path, filename):
         path_one = os.path.join(base, *split_path, filename)
         path_two = os.path.join(base, split_path[0], filename)
         path_three = os.path.join(base, split_path[1], filename)
-        for check_path in [
-            path_one,
-            path_two,
-            path_three,
-        ]:  # Check if the file exists in the current path
+        for check_path in [path_one, path_two, path_three, ]:  # Check if the file exists in the current path
             if os.path.exists(check_path):
                 return check_path
     # Return None if the file was not found
@@ -59,28 +37,17 @@ def get_file(path, filename):
 ASSET_LOCATION = "/pylist/assets/"
 IS_WINDOWS_EXE = hasattr(sys, "_MEIPASS")
 WIZARD_TITLE = "How to Get a Valid YouTube Playlist URL"
-WIZARD_PAGES = [
-    {
-        "text": "First, head over to YouTube and use the search bar to look for a genre or artist. Avoid searching for specific songs at this stage.",
-        "image_path": get_file(ASSET_LOCATION, "page_1.png"),
-    },
-    {
-        "text": "Once the search results are displayed, locate the 'Filter' button at the upper-right corner of the page. \n\nClick it and select 'Playlist' from the dropdown options.",
-        "image_path": get_file(ASSET_LOCATION, "page_2.png"),
-    },
-    {
-        "text": "Browse through the filtered results to find a playlist that catches your interest.\n\nEnsure that the thumbnail indicates multiple videos, or look for a listing that includes a 'VIEW FULL PLAYLIST' button. \n\nOpen the playlist you've chosen.",
-        "image_path": get_file(ASSET_LOCATION, "page_3.png"),
-    },
-    {
-        "text": "After the playlist page has loaded, you'll see a long list of videos on the right hand side of the page.\n\n You should see the playlist name at the top of this list, click on the 'playlist title' to view the playlist.",
-        "image_path": get_file(ASSET_LOCATION, "page_4.png"),
-    },
-    {
-        "text": "You should now be on the playlist's dedicated page. \n\n Verify this by checking if the URL starts with 'youtube.com/playlist?...'. \n\n This is the URL you need.",
-        "image_path": get_file(ASSET_LOCATION, "page_5.png"),
-    },
-]
+WIZARD_PAGES = [{
+    "text": "First, head over to YouTube and use the search bar to look for a genre or artist. Avoid searching for specific songs at this stage.",
+    "image_path": get_file(ASSET_LOCATION, "page_1.png"), }, {
+    "text": "Once the search results are displayed, locate the 'Filter' button at the upper-right corner of the page. \n\nClick it and select 'Playlist' from the dropdown options.",
+    "image_path": get_file(ASSET_LOCATION, "page_2.png"), }, {
+    "text": "Browse through the filtered results to find a playlist that catches your interest.\n\nEnsure that the thumbnail indicates multiple videos, or look for a listing that includes a 'VIEW FULL PLAYLIST' button. \n\nOpen the playlist you've chosen.",
+    "image_path": get_file(ASSET_LOCATION, "page_3.png"), }, {
+    "text": "After the playlist page has loaded, you'll see a long list of videos on the right hand side of the page.\n\n You should see the playlist name at the top of this list, click on the 'playlist title' to view the playlist.",
+    "image_path": get_file(ASSET_LOCATION, "page_4.png"), }, {
+    "text": "You should now be on the playlist's dedicated page. \n\n Verify this by checking if the URL starts with 'youtube.com/playlist?...'. \n\n This is the URL you need.",
+    "image_path": get_file(ASSET_LOCATION, "page_5.png"), }, ]
 
 
 class HowToPage(QWizardPage):
@@ -103,9 +70,7 @@ class HowToPage(QWizardPage):
         image_label = QLabel()
         image_label.setPixmap(image)
         image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)  # Center align the image
-        image_label.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
-        )
+        image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         layout.addWidget(image_label)
         self.setLayout(layout)
@@ -183,19 +148,17 @@ class App(QMainWindow):
         layout.addWidget(self.genre)
         layout.addWidget(self.genre_input)
 
-
-        #download_button
+        # download_button
 
         self.song_list = QListWidget()
         self.song_list.setMinimumHeight(200)
         layout.addWidget(self.song_list)
 
-        #stpp dowmloading
+        # stpp dowmloading
         self.download_button = QPushButton("Download List")
         self.download_button.clicked.connect(self.start_downloading)
         self.download_button.setEnabled(False)  # Enable only after downloads
         layout.addWidget(self.download_button)
-
 
         self.progress_label = QLabel("0/0")
         layout.addWidget(self.progress_label)
@@ -289,8 +252,7 @@ class App(QMainWindow):
         msg.setWindowTitle("What it does")
         msg.setText(
             "This application enables you to download entire YouTube playlists in MP3 format while also populating the files with as much metadata as possible, including album artwork. \n\n"
-            "While streaming services have largely rendered MP3s obsolete for the average listener, they remain essential for DJs and other professionals who need direct access to audio files.\n\nWell-formatted metadata makes it easier to manage your song catalog effectively.\n\nPlease note that this project serves as a proof of concept to demonstrate the technical feasibility of such a service. We do not endorse or encourage the unauthorized distribution of copyrighted material. Always remember to support your favorite artists by purchasing their music legally."
-        )
+            "While streaming services have largely rendered MP3s obsolete for the average listener, they remain essential for DJs and other professionals who need direct access to audio files.\n\nWell-formatted metadata makes it easier to manage your song catalog effectively.\n\nPlease note that this project serves as a proof of concept to demonstrate the technical feasibility of such a service. We do not endorse or encourage the unauthorized distribution of copyrighted material. Always remember to support your favorite artists by purchasing their music legally.")
         msg.exec()
 
     def open_about_dialog(self):
@@ -302,8 +264,7 @@ class App(QMainWindow):
         msg = QMessageBox()
         msg.setWindowTitle("About")
         msg.setText(
-            "GUI and cli interface & metadata injection written by Lewis Morris (lewis.morris@gmail.com)\n\n Libraries Used and Loved: \n\n pytube \n moviepy \n mutagen \n pyside6 \n qt_material"
-        )
+            "GUI and cli interface & metadata injection written by Lewis Morris (lewis.morris@gmail.com)\n\n Libraries Used and Loved: \n\n pytube \n moviepy \n mutagen \n pyside6 \n qt_material")
         msg.exec()
 
     def validate_url(self):
@@ -330,14 +291,11 @@ class App(QMainWindow):
             error_dialog = QMessageBox(self)
             error_dialog.setWindowTitle("Invalid URL")
             error_dialog.setText(
-                "The provided URL is invalid, you must provide a valid YouTube playlist URL. This will be in the format of https://www.youtube.com/playlist?..."
-            )
+                "The provided URL is invalid, you must provide a valid YouTube playlist URL. This will be in the format of https://www.youtube.com/playlist?...")
             error_dialog.setIcon(QMessageBox.Icon.Warning)
 
             ok_button = error_dialog.addButton("OK", QMessageBox.ButtonRole.AcceptRole)
-            how_to_button = error_dialog.addButton(
-                "Show me how", QMessageBox.ButtonRole.ActionRole
-            )
+            how_to_button = error_dialog.addButton("Show me how", QMessageBox.ButtonRole.ActionRole)
 
             error_dialog.exec()
 
@@ -350,9 +308,7 @@ class App(QMainWindow):
         Returns:
             None
         """
-        self.output_folder = QFileDialog.getExistingDirectory(
-            self, "Select Output Folder"
-        )
+        self.output_folder = QFileDialog.getExistingDirectory(self, "Select Output Folder")
         if self.output_folder and os.path.isdir(self.output_folder):
             self.output_location_label.setText(self.output_folder)
             self.change_all(True)
@@ -374,20 +330,14 @@ class App(QMainWindow):
         self.validate_url_button.setEnabled(status)
         self.url_input.setEnabled(status)
 
-
     def toggle_downloading(self):
         if self.download_button.text() == "Start Downloading":
             self.start_downloading()
             self.download_button.setText("Stop Downloading")
             self.download_button.setEnabled(False)
 
-
-
-
     # @Slot(int, str, str, str, str, bool)
-    def update_progress(
-        self, i, artist, title, duration, estimated_remaining, download_started=False
-    ):
+    def update_progress(self, i, artist, title, duration, estimated_remaining, download_started=False):
         """
         Update the progress bar and the progress label.
         Args:
@@ -412,13 +362,14 @@ class App(QMainWindow):
 
         # Automatically scroll to the newest item
         self.song_list.scrollToItem(new_item)
-
+        # self.song_list.update()
+        self.song_list.repaint()
         if estimated_remaining:
-            self.progress_label.setText(
-                f"{i}/{self.playlist_length} (Estimated time remaining: {estimated_remaining})"
-            )
+            self.progress_label.setText(f"{i}/{self.playlist_length} (Estimated time remaining: {estimated_remaining})")
+        else:
+            self.progress_label.setText(f"{i}/{self.playlist_length}")
 
-
+        self.progress_label.repaint()
     total_time = 0  # Total time taken for all songs in seconds
 
     def set_downloading(self, dots=0):
@@ -447,7 +398,6 @@ class App(QMainWindow):
             return False
         return True
 
-
     def start_downloading(self):
         """
         Start downloading the playlist, and update the GUI as the download progresses.
@@ -460,82 +410,43 @@ class App(QMainWindow):
             self.set_downloading(0)
 
             self.total_time = 0  # Initialize total_time
+            i = 0
 
-            for i, (song_meta, time_taken) in enumerate(
-                download_playlist(
-                    self.playlist,
-                    self.output_folder,
-                    genre=self.genre_input.text(),
-                    download_indicator_function=self.set_downloading,
-                )
-            ):
-                title = song_meta["title"]
-                artist = song_meta["author"]
+            for song_meta, time_taken in download_playlist(self.playlist, self.output_folder, genre=self.genre_input.text(),
+                        download_indicator_function=self.set_downloading):
+
+                i += 1
 
                 self.total_time += time_taken  # Updating the total time
-
                 average_time = self.total_time / (i + 1)  # Average time per song
-                estimated_remaining = average_time * (
-                    self.playlist_length - (i + 1)
-                )  # Estimate remaining time
-
+                estimated_remaining = average_time * (self.playlist_length - (i + 1))  # Estimate remaining time
                 duration = time.strftime("%M:%S", time.gmtime(time_taken))
-                estimated_remaining_str = time.strftime(
-                    "%M:%S", time.gmtime(estimated_remaining)
-                )
+                estimated_remaining_str = time.strftime("%M:%S", time.gmtime(estimated_remaining))
 
-                self.update_progress(
-                    i + 1, artist, title, duration, estimated_remaining_str, False
-                )
+                if song_meta == None:
+                    self.update_progress(i, "ERROR", "DOWNLOADING", duration, estimated_remaining_str, False)
+
+                else:
+                    title = song_meta["title"]
+                    artist = song_meta["author"]
+                    self.update_progress(i, artist, title, duration, estimated_remaining_str, False)
 
                 # self.download_progress.emit(i + 1, None, None, None, None, True)
 
-                time.sleep(0.1)
+                time.sleep(0.02)
 
             self.download_button.setText("Start Downloading")
             self.change_all(True)
         else:
             pass
-
-    # def start_downloading(self):
-    #     """
-    #     Confirm that the user wants to start downloading the playlist, and start the download if they do.
-    #     If a folder has not been selected, ask the user if they want to save the files to the default location.
-    #     Returns:
-    #         None
-    #     """
-    #     if not hasattr(self, "output_folder"):
-    #         desktop = os.path.join(os.path.join(os.path.expanduser("~")), "Music")
-    #         output_folder = os.path.join(desktop, "Youtube-rips")
-    #
-    #         confirm_dialog = QMessageBox(self)
-    #         confirm_dialog.setWindowTitle("Confirm Folder")
-    #         confirm_dialog.setText(
-    #             f"You have not selected an output directory. Are you happy to save files to {output_folder}?"
-    #         )
-    #         confirm_dialog.setIcon(QMessageBox.Icon.Question)
-    #         confirm_dialog.setStandardButtons(
-    #             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-    #         )
-    #         result = confirm_dialog.exec()
-    #
-    #         if result == QMessageBox.StandardButton.No:
-    #             return
-    #         else:
-    #             if not os.path.exists(output_folder):
-    #                 os.makedirs(output_folder)
-    #             self.output_folder = output_folder
-    #
-    #     thread = threading.Thread(target=self.start_downloading)
-    #     thread.daemon = True  # Set the thread to daemon mode
-    #     thread.start()
-
     def open_downloaded_folder(self):
         if hasattr(self, 'output_folder'):
             try:
                 subprocess.Popen(['xdg-open', self.output_folder])
             except Exception as e:
                 print(f"Error opening folder: {e}")
+
+
 def show_splash(app: QApplication):
     """
     Show a splash screen while the application is loading.

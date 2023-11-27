@@ -1,9 +1,10 @@
+import os
 import re
 import time
 from typing import Optional
 
 import requests
-from moviepy.editor import *
+from moviepy.editor import AudioFileClip
 from mutagen.id3 import TCON, TALB
 # Function to set metadata for MP3 files
 from mutagen.id3 import TIT2, TPE1, COMM, APIC, TDRC
@@ -11,8 +12,19 @@ from mutagen.mp3 import MP3
 from pylist.utils import run_silently
 from pytube import Playlist, YouTube
 
-
+invalid_characters_replacements = {
+    "<": "_",  # Less than
+    ">": "_",  # Greater than
+    ":": "-",  # Colon
+    "\"": "'", # Double quote
+    "/": "-",  # Forward slash
+    "\\": "-", # Backslash
+    "|": "-",  # Vertical bar or pipe
+    "?": "",   # Question mark
+    "*": "",   # Asterisk
+}
 REMOVE_WORDS = [
+    "|",
     "Official Video",
     "Official Video",
     "Lyric Video",
@@ -36,17 +48,22 @@ REMOVE_WORDS = [
     "Radio Edit",
     "Radio Edit",
     "Clip Officiel",
+    "Clip Officile",
     "Clip Officiel",
     "Official",
     "Official",
     "HD",
     "HD",
+    "[HQ]",
+    "HQ"
     "4K",
+    "[HD]",
     "4K",
     "VEVO",
     "VEVO",
     "Explicit",
     "Explicit",
+    "Music Video",
     "(Clean)",
     "Demo",
     "Demo",
@@ -93,6 +110,7 @@ def set_metadata(
 
     # Add ID3 tag if it doesn't exist
     try:
+
         audio.add_tags()
     except Exception as e:
         print(f"Could not add tags: {e}")
@@ -151,7 +169,19 @@ def set_metadata(
         audio.save()
 
 
+def clean_remix(title, author):
+    """
+    Clean the title of the song
+    """
+    if author in title:
+        title.replace(title, "")
+    if "()" in title:
+        title.replace("()", "")
+    for type in ["bootleg", "remix", "edit", "mix", "rework", "re-edit"]:
+        if f"({type})" in title.lower():
+            title.replace(f"({type})", "type")
 
+    return title
 def clean_title(title: str, featured: str):
     """
     Clean the title of the song
@@ -176,8 +206,13 @@ def clean_title(title: str, featured: str):
         .replace("( )", "")
         .replace("[ ]", "")
         .replace("  ", " ")
+        .replace("( ", "(")
+        .replace(" )", ")")
+        .replace("/", " - ")
         .strip()
     )
+
+
 
 
 def grab_ft(title: str):
@@ -207,7 +242,6 @@ def validate_playlist(playlist_url: str):
 
     """
     playlist = Playlist(playlist_url)
-
     if len(playlist.video_urls) == 0:
         raise Exception("Playlist is empty")
 
@@ -251,6 +285,18 @@ def pull_genre(title):
     for op in options:
         if op.lower() in title.lower():
             return op
+def attempt_get_title_author(yt: YouTube):
+    """
+    Attempt to get the title and author from the YouTube object
+    """
+    try:
+        author, title = yt.title.split("-")
+    except:
+        parts = yt.title.split("-")
+        author = parts[0]
+        title = " ".join(parts[1:])
+
+    return author, title
 
 def pull_meta_data(yt: str):
     """
@@ -267,7 +313,8 @@ def pull_meta_data(yt: str):
         featured = ''
 
     if "-" in yt.title:
-        author, title = yt.title.split("-")
+
+        author, title = attempt_get_title_author(yt)
         title = title.strip().replace("  ", " ")
         author = author.strip().replace("  ", " ")
     else:
@@ -276,6 +323,8 @@ def pull_meta_data(yt: str):
 
     title = clean_title(title, featured)
     author = clean_title(author, featured)
+    title = clean_remix(title, author)
+
 
     if featured:
         author = f"{author}, {featured}"
@@ -284,7 +333,7 @@ def pull_meta_data(yt: str):
     if "-" not in title:
         filename = f"{title} - {author}"
     else:
-        filename = title
+        filename = title.replace("/", " ").replace("\\", " ")
 
     # Additional metadata
     artwork = yt.thumbnail_url
@@ -326,10 +375,9 @@ def download_playlist(
         dump_directory="./",
         genre: Optional[str] = None,
         do_yield=True,
-        is_cli=False,
         verbosity=1,
         download_indicator_function: Optional[callable] = None,
-        silence: Optional[bool] = False,
+        silence=True,
 ):
     """
     Download a playlist from YouTube, song by song, adding the metadata thats extracted from the video
@@ -339,7 +387,6 @@ def download_playlist(
         dump_directory (str): The directory to dump the files to
         genre (str): The genre of the songs
         do_yield (bool): Whether to yield the metadata
-        is_cli (bool): Whether the function is being called from the CLI
         verbosity (int): The verbosity level  0 to 2. 0 is no output, 1 is minimal output, 2 is full output
         download_indicator_function (callable): A function to call to indicate that a download has started
         silence (bool): Whether to silence the output
@@ -363,39 +410,40 @@ def download_playlist(
 
     # Loop through all videos in the playlist
     for url in playlist.video_urls:
-        try:
+        for attempt in range(5):
+            try:
+                start_time = time.time()
 
-            start_time = time.time()
+                log("Attempting to grab: " + url, download_indicator_function, 1)
+                yt = run_silently(download_stream_from_url, silence, url)
+                if yt:
+                    meta_data = pull_meta_data(yt)
+                    log("Metadata received: " + str(meta_data))
 
-            log("Attempting to grab: " + url, download_indicator_function, 1)
-            yt = run_silently(download_stream_from_url, silence, url)
-            if yt:
-                meta_data = pull_meta_data(yt)
-                log("Metadata received: " + str(meta_data))
+                    log("Attempting to download")
+                    filename = run_silently(read_write_audio, silence, meta_data, dump_directory)
 
-                log("Attempting to download")
-                filename = run_silently(read_write_audio, silence, meta_data, dump_directory)
+                    log("Download complete", download_indicator_function, 2)
 
-                log("Download complete", download_indicator_function, 2)
+                    run_silently(set_metadata, silence, save_path=filename, genre=genre, **{**meta_data, **{"album":playlist.title}})
+                    log("MP3 Metadata saved")
 
-                run_silently(set_metadata, silence, save_path=filename, genre=genre, **{**meta_data, **{"album":playlist.title}})
-                log("MP3 Metadata saved")
+                    end_time = time.time()
+                    time_taken = (
+                            end_time - start_time
+                    )  # Time taken for this download in seconds
 
-                end_time = time.time()
-                time_taken = (
-                        end_time - start_time
-                )  # Time taken for this download in seconds
+                    if do_yield:
+                        yield meta_data, time_taken
+                        break
+                    log("Download complete", download_indicator_function, 3)
+                else:
+                    if verbosity > 0:
+                        log("Could not download: " + url)
 
-                if do_yield:
-                    yield meta_data, time_taken
 
-                log("Download complete", download_indicator_function, 3)
-            else:
+            except Exception as e:
                 if verbosity > 0:
-                    log("Could not download: " + url)
-
-
-        except Exception as e:
-            if verbosity > 0:
-                log(f"Could not download: {url} because of {e}")
-            continue
+                    log(f"Could not download: {url} because of {e}")
+                if attempt == 4:
+                    yield None, None
